@@ -3,11 +3,16 @@ from scrapy.loader.processors import MapCompose, TakeFirst, Join
 
 
 def square_root(ch):
-    return ch.replace(u"\n", '').replace("2", u'\00B2')
+    return ch.replace("m", 'm'+format('\u00B2'))
 
 
 class HouseMarketItem(scrapy.Item):
-    area = scrapy.Field(input_processor=MapCompose(square_root),
-                        output_processor=TakeFirst()
-                        )
+    link = scrapy.Field(output_processor=TakeFirst())
+    price = scrapy.Field(output_processor=TakeFirst())
+    address = scrapy.Field(output_processor=TakeFirst())
+    type = scrapy.Field(output_processor=TakeFirst())
+    area = scrapy.Field(input_processor=MapCompose(
+        square_root), output_processor=TakeFirst())
+    bathroom = scrapy.Field(output_processor=TakeFirst())
+    bedroom = scrapy.Field(output_processor=TakeFirst())
     pass
