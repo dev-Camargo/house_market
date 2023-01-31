@@ -10,6 +10,7 @@ from selenium.webdriver.common.by import By
 from selenium.webdriver.chrome.options import Options
 from scrapy.selector import Selector
 from time import sleep
+import os
 
 
 def iniciar_driver():
@@ -32,7 +33,7 @@ def iniciar_driver():
     wait = WebDriverWait(
         driver,
         10,
-        poll_frequency=1,
+        poll_frequency=0.5,
         ignored_exceptions=[
             NoSuchElementException,
             ElementNotVisibleException,
@@ -47,10 +48,21 @@ class RemaxBotSpider(scrapy.Spider):
     name = 'remaxbot'
 
     def start_requests(self):
-        urls = ['https://remax.pt/comprar?searchQueryState=%7B"regionName":"Lisboa","sort":%7B"fieldToSort":"ContractDate","order":1%7D,"businessType":1,"listingClass":1,"page":1,"t":"","mapIsOpen":false,"mapScroll":false,"searchNextToMe":false,"listingTypes":%5B"11"%5D,"price":%7B"min":null,"max":100000%7D,"prn":"Lisboa","regionID":"76","regionType":"Region1ID","regionCoordinates":%7B"latitude":38.8404598668955,"longitude":-9.2186952991834%7D,"regionZoom":9%7D']
+        urls = []
+
+        absolute_path = os.path.dirname(__file__)
+        relative_path = "../../domains.txt"
+        domain_path = os.path.join(absolute_path, relative_path)
+
+        for line in open(domain_path, 'r').readlines():
+            urls.append(line.replace('%22', '"'))
 
         for url in urls:
             yield scrapy.Request(url=url, callback=self.parse, meta={'next_url': urls[0]})
+
+    # custom_settings = {
+    #     'FEEDS': {'datas.csv': {'format': 'csv'}}
+    # }
 
     def parse(self, response):
         driver, wait = iniciar_driver()
@@ -63,15 +75,56 @@ class RemaxBotSpider(scrapy.Spider):
                 By.XPATH, "//div[@class='col-12 col-sm-6 col-md-6 col-lg-4 col-xl-3 result']")
 
             for result in results:
+                try:
+                    link = result.find_element(
+                        By.XPATH, ".//div[@class='listing-search-searchdetails-component']/a").get_attribute('href')
+                except:
+                    link = "--"
+                try:
+                    image = result.find_element(
+                        By.XPATH, ".//div/div[@class='listing-picture']/figure/picture/img").get_attribute('src')
+                except:
+                    image = "--"
+                try:
+                    price = result.find_element(
+                        By.XPATH, ".//div[@class='figCaption']/p[@class='listing-price']").text
+                except:
+                    price = "--"
+                try:
+                    address = result.find_element(
+                        By.XPATH, ".//div[@class='listing-body']/h2[@class='listing-address']/span").text
+                except:
+                    address = "--"
+                try:
+                    type = result.find_element(
+                        By.XPATH, ".//ul[@class='listing-footer']/li[@class='listing-type']").text
+                except:
+                    type = "--"
+                try:
+                    area = (result.find_element(
+                        By.XPATH, ".//li[@class='listing-area']").text).replace("\n2", format('\u00B2'))
+                except:
+                    area = "--"
+                try:
+                    bathroom = result.find_element(
+                        By.XPATH, ".//li[@class='listing-bathroom']").text
+                except:
+                    bathroom = "--"
+                try:
+                    bedroom = result.find_element(
+                        By.XPATH, ".//li[@class='listing-bedroom']").text
+                except:
+                    bedroom = "--"
+
                 yield {
-                    "link": result.find_element(By.XPATH, ".//div[@class='listing-search-searchdetails-component']/a").get_attribute('href'),
-                    "image": result.find_element(By.XPATH, ".//div/div[@class='listing-picture']/figure/picture/img").get_attribute('src'),
-                    "price": result.find_element(By.XPATH, ".//div[@class='figCaption']/p[@class='listing-price']").text,
-                    "address": result.find_element(By.XPATH, ".//div[@class='listing-body']/h2[@class='listing-address']/span").text,
-                    "type": result.find_element(By.XPATH, ".//ul[@class='listing-footer']/li[@class='listing-type']").text,
-                    "area": (result.find_element(By.XPATH, ".//li[@class='listing-area']").text).replace("\n2", format('\u00B2')),
-                    "bathroom": result.find_element(By.XPATH, ".//li[@class='listing-bathroom']").text,
-                    "bedroom": result.find_element(By.XPATH, ".//li[@class='listing-bedroom']").text,
+                    "link": link,
+                    "image": image,
+                    "price": price,
+                    "address": address,
+                    "type": type,
+                    "area": area,
+                    "bathroom": bathroom,
+                    "bedroom": bedroom,
                 }
 
             try:
@@ -86,18 +139,4 @@ class RemaxBotSpider(scrapy.Spider):
             page_arrow_path = "//li[@class='arrow page-item'][2]/a"
 
             sleep(2)
-
         driver.close()
-
-
-def get_remax_url():
-    # Selenium apply available filters - return optimized url
-    pass
-
-
-def check_if_exists(xpath, driver):
-    try:
-        driver.find_element_by_xpath(xpath)
-    except NoSuchElementException:
-        return False
-    return True

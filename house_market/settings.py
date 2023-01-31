@@ -14,6 +14,10 @@ NEWSPIDER_MODULE = 'house_market.spiders'
 
 FEED_EXPORT_ENCODING = 'utf-8'
 
+FEEDS = {
+    'data/%(name)s_%(time)s_batch_%(batch_id)d.csv': {'format': 'csv', 'batch_item_count': 1000}
+}
+
 # Crawl responsibly by identifying yourself (and your website) on the user-agent
 #USER_AGENT = 'house_market (+http://www.yourdomain.com)'
 
